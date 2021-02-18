@@ -1,32 +1,71 @@
-import React, { Component } from 'react';
-import logo from './logo.svg';
-import './App.css';
-import { withAuthenticator } from 'aws-amplify-react'
-import Amplify, { Auth } from 'aws-amplify';
-import aws_exports from './aws-exports';
-Amplify.configure(aws_exports);
+ define([
 
-class App extends Component {
-  render() {
-    return (
-      <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <p>
-            Edit <code>src/App.js</code> and save to reload.
-          </p>
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn React
-          </a>
-        </header>
-      </div>
-    );
-  }
-}
+  'jquery',
+  'underscore',
+  'backbone',
+  'marionette', 
+  'handlebars',
+  'text!templates/app_view.html',
 
-export default withAuthenticator(App, true);
+  'modules/mainMenuView/mainMenuView',
+  'modules/dashboard/dashboard',
+],
+function ($, _, Backbone, Marionette, Handlebars, tmpl, mainMenuView, dashboard ) {
+
+
+    Backbone.Marionette.TemplateCache.prototype.compileTemplate = function(rawTemplate) {
+
+        return Handlebars.compile(rawTemplate);
+    };
+
+    var App = new Backbone.Marionette.Application();
+
+    App.addRegions({
+
+         main: '#main'
+    });
+
+    App.addInitializer(function() {
+
+       this.initAppLayout();   
+    });
+
+    App.on("initialize:after", function(){
+
+      Backbone.history.start({ pushState: true });
+    });
+
+    App.initAppLayout = function() {
+
+        AppLayout = Backbone.Marionette.Layout.extend({
+
+         template: tmpl,
+
+         regions: {
+             userInfo: "#userInfo",
+             mainMenu: "#mainMenu",
+             content: "#content"
+         },
+
+        });
+
+        var layout = new AppLayout();
+        App.main.show(layout);
+
+        App.main.currentView.mainMenu.show(new mainMenuView.Views.menu());
+        App.main.currentView.content.show(new dashboard.Views.main());    
+
+       // this can be a main menu navigation
+       // this will change content at the "main" app screen
+       // your links should include the role=nav-main-app
+
+        $('a[role=nav-main-app]').click(function(e) {
+          App.Router.navigate( $(this).attr('href'), {trigger: true});
+          e.preventDefault(); 
+        });  
+
+    };
+
+    return App;
+
+});
